@@ -1,10 +1,19 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
+import json
 import time
+import configparser
 
+#Load w1 modules
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
+
+#Parse config
+config = configparser.ConfigParser()
+config.read('readtemps.cfg')
+path = config.get('Config','sensorpath')
+sensors = config.get('Config','sensors')
 
 def temp_raw(temp_sensor):
 
@@ -28,14 +37,11 @@ def read_temp(temp_sensor):
         temp_f = temp_c * 9.0 / 5.0 + 32.0
         return temp_c, temp_f
 
-def print_temps(sensorname,sensorid):
-    sensorbase='/sys/bus/w1/devices/28-{}/w1_slave'
-    temps=read_temp(sensorbase.format(sensorid))
-    print('temperature_stats,probe={},w1id={},degrees_c={},degress_F={}'.format(sensorname,sensorid,temps[0],temps[1]))
+def print_temps(spath,sname,sid):
+    temps=read_temp(spath)
+    print('temperature_stats,probe={},w1id={} degrees_c={},degress_F={}'.format(sname,sid,temps[0],temps[1]))
 
-#temp_sensor = '/sys/bus/w1/devices/28-0516a51072ff/w1_slave'
-#temps=read_temp()
-
-print_temps('cpu','0516a51072ff')
-print_temps('air','0316a4be7fff')
+for sensor in json.loads(sensors):
+    sensorpath = '{}/{}/w1_slave'.format(path,sensor['id'])
+    print_temps(sensorpath,sensor['name'],sensor['id'])
 
